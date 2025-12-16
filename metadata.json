@@ -1,0 +1,7 @@
+{
+  "name": "AInfinite Floor Is Lava",
+  "description": "A motion-controlled game where kids use their body to jump and move to avoid the lava floor.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
