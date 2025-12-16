@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { GameState } from './types';
 import WebcamController from './components/WebcamController';
 import GameEngine from './components/GameEngine';
-import { Play, RotateCcw, Hand, Heart } from 'lucide-react';
+import { Play, RotateCcw } from 'lucide-react';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -45,7 +45,7 @@ const App: React.FC = () => {
     <div className="relative w-screen h-screen overflow-hidden bg-[#87CEEB]">
       {/* Branding */}
       <div className="absolute bottom-4 right-4 z-50 bg-white/10 backdrop-blur-md p-2 rounded-lg border border-white/20 flex flex-col items-center">
-        <Hand className="text-blue-300 mb-1" size={24} />
+        <img src="/new-logo.png" alt="AInfinite Game Studio" className="w-10 h-10 mb-1" />
         <div className="text-white/80 text-[10px] font-bold uppercase tracking-wider text-center leading-tight">
             AInfinite<br/>Game Studio
         </div>
@@ -67,15 +67,16 @@ const App: React.FC = () => {
       {/* UI Overlays */}
       {(!gameState.isPlaying || gameState.gameOver) && (
         <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/60 backdrop-blur-sm">
-           <div className="bg-white rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl border-b-8 border-gray-300 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-orange-400 to-red-500 z-0"></div>
-              
-              <div className="relative z-10 pt-4">
+           <div className="bg-white rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl border-b-8 border-[#1E3A5F] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-28 bg-[#F5B819]/10 z-0"></div>
+
+              <div className="relative z-10 pt-2">
                 {!gameState.gameOver ? (
                     // START SCREEN
                     <>
-                        <h1 className="text-4xl text-white font-black drop-shadow-md mb-8 game-font text-outline">
-                            FLOOR IS LAVA: 3D
+                        <img src="/new-logo.png" alt="AInfinite" className="w-16 h-16 mx-auto mb-2" />
+                        <h1 className="text-3xl text-[#1E3A5F] font-black drop-shadow-md mb-6 game-font">
+                            AINFINITE MINECRAFT RUNNER
                         </h1>
                         
                         {!gameState.cameraReady ? (
@@ -84,35 +85,35 @@ const App: React.FC = () => {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4 text-left bg-gray-50 p-4 rounded-xl border-2 border-gray-100">
+                                <div className="grid grid-cols-2 gap-4 text-left bg-[#1E3A5F]/5 p-4 rounded-xl border-2 border-[#1E3A5F]/10">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl">🧍</div>
+                                        <div className="w-10 h-10 rounded-full bg-[#F5B819]/20 flex items-center justify-center text-xl">🧍</div>
                                         <div>
-                                            <div className="font-bold text-gray-800 text-sm">Stand Back</div>
-                                            <div className="text-xs text-gray-500">Show full body</div>
+                                            <div className="font-bold text-[#1E3A5F] text-sm">Stand Back</div>
+                                            <div className="text-xs text-[#1E3A5F]/60">Show full body</div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">↔️</div>
+                                        <div className="w-10 h-10 rounded-full bg-[#F5B819]/20 flex items-center justify-center text-xl">↔️</div>
                                         <div>
-                                            <div className="font-bold text-gray-800 text-sm">Lean</div>
-                                            <div className="text-xs text-gray-500">To switch lanes</div>
+                                            <div className="font-bold text-[#1E3A5F] text-sm">Lean</div>
+                                            <div className="text-xs text-[#1E3A5F]/60">To switch lanes</div>
                                         </div>
                                     </div>
-                                    <div className="col-span-2 bg-yellow-50 p-2 rounded-lg border border-yellow-200">
+                                    <div className="col-span-2 bg-[#F5B819]/10 p-2 rounded-lg border border-[#F5B819]/30">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-xl">⬆️</div>
+                                            <div className="w-10 h-10 rounded-full bg-[#F5B819]/30 flex items-center justify-center text-xl">⬆️</div>
                                             <div>
-                                                <div className="font-bold text-gray-800 text-sm">HOW TO JUMP</div>
-                                                <div className="text-xs text-gray-600">Quickly jump UP with your whole body!</div>
+                                                <div className="font-bold text-[#1E3A5F] text-sm">HOW TO JUMP</div>
+                                                <div className="text-xs text-[#1E3A5F]/70">Quickly jump UP with your whole body!</div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <button 
+                                <button
                                     onClick={handleStart}
-                                    className="w-full py-5 bg-green-500 hover:bg-green-600 text-white text-3xl rounded-2xl font-black shadow-[0_6px_0_rgb(21,128,61)] active:shadow-[0_2px_0_rgb(21,128,61)] active:translate-y-1 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
+                                    className="w-full py-5 bg-[#F5B819] hover:bg-[#E5A008] text-[#1E3A5F] text-3xl rounded-2xl font-black shadow-[0_6px_0_#B8860B] active:shadow-[0_2px_0_#B8860B] active:translate-y-1 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
                                 >
                                     <Play size={32} fill="currentColor" />
                                     PLAY
@@ -121,26 +122,37 @@ const App: React.FC = () => {
                         )}
                     </>
                 ) : (
-                    // GAME OVER
-                    <>
-                        <h1 className="text-5xl text-white font-black drop-shadow-md mb-2 game-font text-outline">
-                            GAME OVER
-                        </h1>
-                        <p className="text-lg text-gray-600 font-bold mb-8">Out of lives!</p>
-                        
-                        <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-6 mb-8">
-                            <div className="text-xs text-yellow-600 font-bold uppercase tracking-widest mb-1">Final Score</div>
-                            <div className="text-6xl text-yellow-500 font-black game-font">{gameState.score}</div>
+                    // GAME OVER - Clean modern design
+                    <div className="-mt-4">
+                        {/* Logo with glow effect */}
+                        <div className="relative mb-6">
+                            <div className="absolute inset-0 flex justify-center items-center">
+                                <div className="w-28 h-28 bg-[#F5B819]/20 rounded-full blur-xl"></div>
+                            </div>
+                            <img src="/new-logo.png" alt="AInfinite" className="w-24 h-24 mx-auto relative z-10" />
                         </div>
 
-                        <button 
+                        {/* Game Over Text */}
+                        <h1 className="text-4xl text-[#1E3A5F] font-black mb-1 game-font tracking-wide">
+                            GAME OVER
+                        </h1>
+                        <p className="text-sm text-[#1E3A5F]/50 font-medium mb-6">Better luck next time!</p>
+
+                        {/* Score Display */}
+                        <div className="bg-gradient-to-br from-[#1E3A5F] to-[#2A4A6F] rounded-2xl p-6 mb-6 shadow-lg">
+                            <div className="text-[#F5B819] text-xs font-bold uppercase tracking-widest mb-2">Your Score</div>
+                            <div className="text-5xl text-white font-black game-font">{gameState.score}</div>
+                        </div>
+
+                        {/* Play Again Button */}
+                        <button
                             onClick={handleRestart}
-                            className="w-full py-5 bg-blue-500 hover:bg-blue-600 text-white text-2xl rounded-2xl font-black shadow-[0_6px_0_rgb(29,78,216)] active:shadow-[0_2px_0_rgb(29,78,216)] active:translate-y-1 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
+                            className="w-full py-4 bg-[#F5B819] hover:bg-[#E5A008] text-[#1E3A5F] text-xl rounded-xl font-black shadow-[0_4px_0_#B8860B] active:shadow-[0_2px_0_#B8860B] active:translate-y-[2px] transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
                         >
-                            <RotateCcw size={28} />
-                            Try Again
+                            <RotateCcw size={24} />
+                            Play Again
                         </button>
-                    </>
+                    </div>
                 )}
               </div>
            </div>

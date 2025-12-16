@@ -13,7 +13,10 @@ interface GameEngineProps {
 
 const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseData }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
+  // Audio Ref
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
+
   // Game Logic Refs
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -103,28 +106,47 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
     sun.rotation.y = Math.PI / 6;
     skyGroup.add(sun);
 
-    // Clouds
+    // Clouds - Minecraft style blocky clouds (lots of them!)
     const cloudGroup = new THREE.Group();
     const cloudGeo = new THREE.BoxGeometry(1, 1, 1); // Unit box to scale
-    const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
-    
-    // Create random clouds (Increased count to 50)
-    for (let i = 0; i < 50; i++) {
-        const width = 6 + Math.random() * 14;
-        const depth = 4 + Math.random() * 10;
+    const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+
+    // Create MANY random clouds (100+)
+    for (let i = 0; i < 120; i++) {
+        const width = 8 + Math.random() * 16;
+        const depth = 6 + Math.random() * 12;
         const cloud = new THREE.Mesh(cloudGeo, cloudMat);
         cloud.scale.set(width, 2 + Math.random() * 2, depth);
-        
+
         // Random Position in sky (Wider distribution)
         cloud.position.set(
-            (Math.random() - 0.5) * 200, // X: -100 to 100
-            20 + Math.random() * 40,     // Y: 20 to 60 (High up)
-            10 - Math.random() * 150     // Z: 10 to -140
+            (Math.random() - 0.5) * 250, // X: -125 to 125
+            15 + Math.random() * 50,     // Y: 15 to 65 (High up)
+            20 - Math.random() * 180     // Z: 20 to -160
         );
         cloudGroup.add(cloud);
     }
     skyGroup.add(cloudGroup);
     cloudsRef.current = cloudGroup;
+
+    // GREEN GROUND PLANES (Minecraft grass on both sides)
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x5d8c3d }); // Minecraft grass green
+
+    // Left ground
+    const leftGroundGeo = new THREE.PlaneGeometry(100, 250);
+    const leftGround = new THREE.Mesh(leftGroundGeo, groundMat);
+    leftGround.rotation.x = -Math.PI / 2;
+    leftGround.position.set(-55, -0.1, -75);
+    leftGround.receiveShadow = true;
+    scene.add(leftGround);
+
+    // Right ground
+    const rightGroundGeo = new THREE.PlaneGeometry(100, 250);
+    const rightGround = new THREE.Mesh(rightGroundGeo, groundMat);
+    rightGround.rotation.x = -Math.PI / 2;
+    rightGround.position.set(55, -0.1, -75);
+    rightGround.receiveShadow = true;
+    scene.add(rightGround);
 
     // 6. Materials (Minecraft Style)
     const stoneTex = createPixelTexture('stone');
@@ -236,6 +258,31 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
   }, [gameState.isPlaying, gameState.gameOver]);
 
 
+  // --- BACKGROUND MUSIC ---
+  useEffect(() => {
+    // Initialize audio once
+    if (!bgMusicRef.current) {
+      bgMusicRef.current = new Audio('/music.mp3');
+      bgMusicRef.current.loop = true;
+      bgMusicRef.current.volume = 0.5;
+    }
+
+    const music = bgMusicRef.current;
+
+    if (gameState.isPlaying && !gameState.gameOver) {
+      music.play().catch(() => {
+        // Autoplay may be blocked, will play on next user interaction
+      });
+    } else {
+      music.pause();
+      music.currentTime = 0;
+    }
+
+    return () => {
+      music.pause();
+    };
+  }, [gameState.isPlaying, gameState.gameOver]);
+
   // --- INPUT HANDLING ---
   useEffect(() => {
     if (!gameState.isPlaying || gameState.gameOver || !poseData) return;
@@ -314,49 +361,78 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
   const createEnvironmentMesh = (type: 'tree' | 'grass' | 'flower'): THREE.Group => {
     const group = new THREE.Group();
     if (!envMaterialsRef.current) return group;
-    
+
     if (type === 'tree') {
-        // Trunk
-        const trunkGeo = new THREE.BoxGeometry(1, 4, 1);
-        const trunk = new THREE.Mesh(trunkGeo, envMaterialsRef.current.wood);
-        trunk.position.y = 2; // Base at 0
-        trunk.castShadow = true;
-        group.add(trunk);
-        
-        // Leaves
-        const leavesGeo = new THREE.BoxGeometry(3, 3, 3);
-        const leaves = new THREE.Mesh(leavesGeo, envMaterialsRef.current.leaves);
-        leaves.position.y = 5;
-        leaves.castShadow = true;
-        group.add(leaves);
-    } else if (type === 'grass') {
-        const bladeGeo = new THREE.BoxGeometry(0.2, 0.6, 0.2);
-        // Cluster of blades
-        for(let i=0; i<3; i++) {
-            const blade = new THREE.Mesh(bladeGeo, envMaterialsRef.current.grass);
-            blade.position.set(
-                (Math.random()-0.5) * 0.8,
-                0.3,
-                (Math.random()-0.5) * 0.8
-            );
-            blade.rotation.y = Math.random() * Math.PI;
-            group.add(blade);
+        // Minecraft style blocky tree
+        // Trunk - stack of wood blocks
+        const trunkHeight = 4 + Math.floor(Math.random() * 3);
+        for (let y = 0; y < trunkHeight; y++) {
+            const trunkGeo = new THREE.BoxGeometry(1, 1, 1);
+            const trunk = new THREE.Mesh(trunkGeo, envMaterialsRef.current.wood);
+            trunk.position.y = y + 0.5;
+            trunk.castShadow = true;
+            group.add(trunk);
         }
+
+        // Leaves - blocky cube cluster
+        const leafPositions = [
+            // Top layer
+            [0, trunkHeight + 2, 0],
+            // Second layer (cross pattern)
+            [0, trunkHeight + 1, 0],
+            [1, trunkHeight + 1, 0], [-1, trunkHeight + 1, 0],
+            [0, trunkHeight + 1, 1], [0, trunkHeight + 1, -1],
+            // Third layer (bigger cross)
+            [0, trunkHeight, 0],
+            [1, trunkHeight, 0], [-1, trunkHeight, 0],
+            [0, trunkHeight, 1], [0, trunkHeight, -1],
+            [1, trunkHeight, 1], [-1, trunkHeight, 1],
+            [1, trunkHeight, -1], [-1, trunkHeight, -1],
+            // Fourth layer
+            [1, trunkHeight - 1, 0], [-1, trunkHeight - 1, 0],
+            [0, trunkHeight - 1, 1], [0, trunkHeight - 1, -1],
+            [1, trunkHeight - 1, 1], [-1, trunkHeight - 1, 1],
+            [1, trunkHeight - 1, -1], [-1, trunkHeight - 1, -1],
+        ];
+
+        leafPositions.forEach(pos => {
+            const leafGeo = new THREE.BoxGeometry(1, 1, 1);
+            const leaf = new THREE.Mesh(leafGeo, envMaterialsRef.current!.leaves);
+            leaf.position.set(pos[0], pos[1], pos[2]);
+            leaf.castShadow = true;
+            group.add(leaf);
+        });
+
+    } else if (type === 'grass') {
+        // Minecraft style grass - small green blocks
+        const clusterSize = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < clusterSize; i++) {
+            const grassGeo = new THREE.BoxGeometry(0.3, 0.5 + Math.random() * 0.3, 0.3);
+            const grass = new THREE.Mesh(grassGeo, envMaterialsRef.current.grass);
+            grass.position.set(
+                (Math.random() - 0.5) * 1.2,
+                0.25,
+                (Math.random() - 0.5) * 1.2
+            );
+            group.add(grass);
+        }
+
     } else if (type === 'flower') {
+        // Minecraft style flower - stem block + colored top block
         // Stem
-        const stemGeo = new THREE.BoxGeometry(0.1, 0.5, 0.1);
+        const stemGeo = new THREE.BoxGeometry(0.2, 0.6, 0.2);
         const stem = new THREE.Mesh(stemGeo, envMaterialsRef.current.flowerStem);
-        stem.position.y = 0.25;
+        stem.position.y = 0.3;
         group.add(stem);
-        
-        // Flower Head
-        const headGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-        const isYellow = Math.random() > 0.5;
+
+        // Flower head - random color
+        const isRed = Math.random() > 0.5;
+        const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
         const head = new THREE.Mesh(
-            headGeo, 
-            isYellow ? envMaterialsRef.current.flowerPetalYellow : envMaterialsRef.current.flowerPetalRed
+            headGeo,
+            isRed ? envMaterialsRef.current.flowerPetalRed : envMaterialsRef.current.flowerPetalYellow
         );
-        head.position.y = 0.5;
+        head.position.y = 0.7;
         group.add(head);
     }
 
@@ -366,17 +442,18 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
   const spawnDecoration = (z: number) => {
     if (!sceneRef.current) return;
 
-    // Spawn on Left (-X) or Right (+X)
+    // Spawn on Left (-X) or Right (+X) - forest on both sides
     const isLeft = Math.random() > 0.5;
-    const baseOffset = 6;
-    const randomOffset = Math.random() * 20; // Spread out to side
+    const baseOffset = 8; // Keep decorations away from running lane
+    const randomOffset = Math.random() * 50; // Wide spread
     const x = isLeft ? -(baseOffset + randomOffset) : (baseOffset + randomOffset);
-    
-    // Determine Type
+
+    // Determine Type - balanced mix
     const rand = Math.random();
     let type: 'tree' | 'grass' | 'flower' = 'grass';
-    if (rand > 0.8) type = 'tree';
-    else if (rand > 0.6) type = 'flower';
+    if (rand > 0.75) type = 'tree';        // 25% trees
+    else if (rand > 0.4) type = 'flower';  // 35% flowers
+    // 40% grass
 
     const id = Math.random().toString();
     const decoration: Decoration3D = {
@@ -392,9 +469,10 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
     const meshGroup = createEnvironmentMesh(type);
     meshGroup.position.set(x, 0, z);
     meshGroup.rotation.y = decoration.rotation;
-    
-    // Scale randomization
-    const s = 0.8 + Math.random() * 0.4;
+
+    // Scale randomization - bigger trees!
+    let s = 0.8 + Math.random() * 0.4;
+    if (type === 'tree') s = 0.9 + Math.random() * 0.6; // Trees can be bigger
     meshGroup.scale.set(s, s, s);
 
     sceneRef.current.add(meshGroup);
@@ -505,9 +583,12 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
       }
 
       // 4. Spawn & Move Environment
-      // Spawn decorations 5 times faster than obstacles to fill the world
-      if (time - lastDecorSpawnTimeRef.current > (GAME_CONSTANTS.SPAWN_INTERVAL_BASE * 1000) / (speedRef.current / 15) / 5) {
-        spawnDecoration(GAME_CONSTANTS.SPAWN_DISTANCE);
+      // Spawn decorations at moderate rate
+      if (time - lastDecorSpawnTimeRef.current > (GAME_CONSTANTS.SPAWN_INTERVAL_BASE * 1000) / (speedRef.current / 15) / 8) {
+        // Spawn 2 decorations at a time
+        for (let i = 0; i < 2; i++) {
+            spawnDecoration(GAME_CONSTANTS.SPAWN_DISTANCE - Math.random() * 20);
+        }
         lastDecorSpawnTimeRef.current = time;
       }
       
@@ -606,28 +687,28 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
         
         {/* HUD */}
         <div className="absolute top-8 left-1/2 transform -translate-x-1/2 text-center pointer-events-none z-10">
-            <h1 className="text-5xl text-white game-font text-outline leading-tight drop-shadow-lg">
-                MINECRAFT STYLE RUNNER
+            <h1 className="text-5xl text-[#F5B819] game-font leading-tight drop-shadow-lg" style={{textShadow: '3px 3px 0 #1E3A5F, -1px -1px 0 #1E3A5F, 1px -1px 0 #1E3A5F, -1px 1px 0 #1E3A5F'}}>
+                AINFINITE MINECRAFT RUNNER
             </h1>
         </div>
 
         {/* Lives & Score Panel */}
-        <div className="absolute bottom-8 left-8 hud-panel rounded-none border-4 border-gray-800 bg-gray-700/80 p-4 shadow-xl flex gap-8 items-center">
+        <div className="absolute bottom-8 left-8 hud-panel rounded-none border-4 border-[#1E3A5F] bg-[#1E3A5F]/80 p-4 shadow-xl flex gap-8 items-center">
             <div>
-                <div className="text-yellow-400 text-sm font-bold uppercase mb-1">XP / Score</div>
-                <div className="text-4xl text-green-400 font-black font-mono">
+                <div className="text-[#F5B819] text-sm font-bold uppercase mb-1">XP / Score</div>
+                <div className="text-4xl text-white font-black font-mono">
                     {scoreRef.current}
                 </div>
             </div>
-            
-            <div className="border-l-2 border-gray-500 pl-8">
-                <div className="text-red-400 text-sm font-bold uppercase mb-1">Health</div>
+
+            <div className="border-l-2 border-[#F5B819]/30 pl-8">
+                <div className="text-[#F5B819] text-sm font-bold uppercase mb-1">Health</div>
                 <div className="flex gap-2">
                     {[1, 2, 3].map((life) => (
-                        <Heart 
-                           key={life} 
-                           fill={life <= gameState.lives ? "#EF4444" : "none"} 
-                           color={life <= gameState.lives ? "#EF4444" : "#666"}
+                        <Heart
+                           key={life}
+                           fill={life <= gameState.lives ? "#F5B819" : "none"}
+                           color={life <= gameState.lives ? "#F5B819" : "#666"}
                            size={32}
                            className="drop-shadow-sm"
                         />
@@ -635,15 +716,15 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
                 </div>
             </div>
         </div>
-        
-        <div className="absolute bottom-8 right-8 hud-panel rounded-none border-4 border-gray-800 bg-gray-700/80 p-4 shadow-xl text-center">
+
+        <div className="absolute bottom-8 right-8 hud-panel rounded-none border-4 border-[#1E3A5F] bg-[#1E3A5F]/80 p-4 shadow-xl text-center">
              <div className="text-white text-xs font-bold">JUMP DETECTOR</div>
-             <div className="text-yellow-400 text-xs mt-1">Stand & Jump UP!</div>
+             <div className="text-[#F5B819] text-xs mt-1">Stand & Jump UP!</div>
         </div>
 
         {playerStateRef.current.isJumping && (
             <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2">
-                 <div className="text-orange-500 font-black text-6xl text-outline animate-bounce">JUMP!</div>
+                 <div className="text-[#F5B819] font-black text-6xl animate-bounce" style={{textShadow: '3px 3px 0 #1E3A5F, -1px -1px 0 #1E3A5F, 1px -1px 0 #1E3A5F, -1px 1px 0 #1E3A5F'}}>JUMP!</div>
             </div>
         )}
     </div>
