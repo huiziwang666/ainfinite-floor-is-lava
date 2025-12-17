@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { GameState, Player3D, Obstacle3D, Lane, Decoration3D } from '../types';
 import { GAME_CONSTANTS, COLORS } from '../constants';
@@ -56,6 +56,8 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
   const lastTimeRef = useRef<number>(0);
   const lastSpawnTimeRef = useRef<number>(0);
   const lastDecorSpawnTimeRef = useRef<number>(0);
+  const isPlayingRef = useRef<boolean>(false);
+  const isPausedRef = useRef<boolean>(false);
 
   // --- THREE.JS INITIALIZATION ---
   useEffect(() => {
@@ -230,21 +232,8 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
     speedRef.current = GAME_CONSTANTS.START_SPEED;
     lastHitTimeRef.current = 0;
 
-    const animate = (time: number) => {
-        if (!gameState.isPlaying || gameState.gameOver) return;
-        
-        const delta = (time - lastTimeRef.current) / 1000;
-        lastTimeRef.current = time;
-
-        updateGameLogic(delta, time);
-        renderScene();
-        
-        animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    if (gameState.isPlaying) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-    }
+    // Render initial frame
+    renderer.render(scene, camera);
 
     // Cleanup
     return () => {
@@ -258,6 +247,48 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
   }, [gameState.isPlaying, gameState.gameOver]);
 
 
+  // --- ANIMATION LOOP ---
+  useEffect(() => {
+    if (!gameState.isPlaying || gameState.gameOver) return;
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+
+    isPlayingRef.current = true;
+    isPausedRef.current = gameState.isPaused;
+    lastTimeRef.current = performance.now();
+
+    const animate = (time: number) => {
+      if (!isPlayingRef.current) return;
+
+      // Always request next frame to keep loop alive
+      animationFrameRef.current = requestAnimationFrame(animate);
+
+      // Skip game logic when paused, but still render
+      if (isPausedRef.current) {
+        lastTimeRef.current = time;
+        renderScene();
+        return;
+      }
+
+      const delta = (time - lastTimeRef.current) / 1000;
+      lastTimeRef.current = time;
+
+      updateGameLogic(delta, time);
+      renderScene();
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      isPlayingRef.current = false;
+      cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [gameState.isPlaying, gameState.gameOver]);
+
+  // --- PAUSE STATE SYNC ---
+  useEffect(() => {
+    isPausedRef.current = gameState.isPaused;
+  }, [gameState.isPaused]);
+
   // --- BACKGROUND MUSIC ---
   useEffect(() => {
     // Initialize audio once
@@ -269,23 +300,25 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
 
     const music = bgMusicRef.current;
 
-    if (gameState.isPlaying && !gameState.gameOver) {
+    if (gameState.isPlaying && !gameState.gameOver && !gameState.isPaused) {
       music.play().catch(() => {
         // Autoplay may be blocked, will play on next user interaction
       });
     } else {
       music.pause();
-      music.currentTime = 0;
+      if (gameState.gameOver || !gameState.isPlaying) {
+        music.currentTime = 0;
+      }
     }
 
     return () => {
       music.pause();
     };
-  }, [gameState.isPlaying, gameState.gameOver]);
+  }, [gameState.isPlaying, gameState.gameOver, gameState.isPaused]);
 
   // --- INPUT HANDLING ---
   useEffect(() => {
-    if (!gameState.isPlaying || gameState.gameOver || !poseData) return;
+    if (!gameState.isPlaying || gameState.gameOver || gameState.isPaused || !poseData) return;
     
     const now = performance.now();
     const gesture = detectGesture(poseData.poseLandmarks, now);
@@ -301,7 +334,7 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
         if (currentLane < 2) playerStateRef.current.lane = (currentLane + 1) as Lane;
     }
 
-  }, [poseData, gameState.isPlaying, gameState.gameOver]);
+  }, [poseData, gameState.isPlaying, gameState.gameOver, gameState.isPaused]);
 
 
   // --- HELPERS ---

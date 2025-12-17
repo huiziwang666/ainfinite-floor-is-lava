@@ -140,19 +140,23 @@ export const detectGesture = (landmarks: any, timestamp: number): Gesture => {
   }
 
   // 2. Jump Detection
-  // MediaPipe Y coordinates: 0 is top, 1 is bottom. 
+  // MediaPipe Y coordinates: 0 is top, 1 is bottom.
   // Jumping means Y decreases (body moves UP).
+  // Don't detect jump if we recently changed lanes (body position shifts during lean)
   const jumpDiff = baselineHipY - currentY;
-  
+  const timeSinceLastGesture = timestamp - lastGestureTime;
+
   if (jumpDiff > GAME_CONSTANTS.JUMP_THRESHOLD_Y) {
-    if (timestamp - lastJumpTime > GAME_CONSTANTS.JUMP_COOLDOWN) {
+    // Only allow jump if enough time passed since last jump AND last lane change
+    if (timestamp - lastJumpTime > GAME_CONSTANTS.JUMP_COOLDOWN &&
+        timeSinceLastGesture > GAME_CONSTANTS.LANE_CHANGE_COOLDOWN) {
         lastJumpTime = timestamp;
         return 'JUMP';
     }
   }
 
   // 3. Lean Detection
-  if (timestamp - lastGestureTime < GAME_CONSTANTS.LANE_CHANGE_COOLDOWN) {
+  if (timeSinceLastGesture < GAME_CONSTANTS.LANE_CHANGE_COOLDOWN) {
       return 'NONE';
   }
 

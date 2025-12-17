@@ -1,5 +1,6 @@
 export interface GameState {
   isPlaying: boolean;
+  isPaused: boolean;
   score: number;
   gameOver: boolean;
   speed: number;

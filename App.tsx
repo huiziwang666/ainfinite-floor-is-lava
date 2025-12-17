@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { GameState } from './types';
 import WebcamController from './components/WebcamController';
 import GameEngine from './components/GameEngine';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, Pause } from 'lucide-react';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
     isPlaying: false,
+    isPaused: false,
     score: 0,
     gameOver: false,
     speed: 0,
@@ -21,6 +22,7 @@ const App: React.FC = () => {
     setGameState(prev => ({
       ...prev,
       isPlaying: true,
+      isPaused: false,
       gameOver: false,
       score: 0,
       lives: 3
@@ -31,10 +33,19 @@ const App: React.FC = () => {
     setGameState(prev => ({
       ...prev,
       isPlaying: true,
+      isPaused: false,
       gameOver: false,
       score: 0,
       lives: 3
     }));
+  };
+
+  const handlePause = () => {
+    setGameState(prev => ({ ...prev, isPaused: true }));
+  };
+
+  const handleResume = () => {
+    setGameState(prev => ({ ...prev, isPaused: false }));
   };
 
   const onCameraReady = () => {
@@ -63,6 +74,33 @@ const App: React.FC = () => {
           setGameState={setGameState} 
           poseData={poseData}
       />
+
+      {/* Pause Button - visible during active gameplay */}
+      {gameState.isPlaying && !gameState.gameOver && !gameState.isPaused && (
+        <button
+          onClick={handlePause}
+          className="absolute top-8 right-8 z-50 bg-[#1E3A5F]/80 hover:bg-[#1E3A5F] p-3 rounded-lg border-2 border-[#F5B819] transition-all"
+        >
+          <Pause size={28} color="#F5B819" />
+        </button>
+      )}
+
+      {/* Pause Overlay */}
+      {gameState.isPlaying && gameState.isPaused && !gameState.gameOver && (
+        <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-b-8 border-[#1E3A5F]">
+            <img src="/new-logo.png" alt="AInfinite" className="w-16 h-16 mx-auto mb-4" />
+            <h2 className="text-3xl text-[#1E3A5F] font-black mb-6 game-font">PAUSED</h2>
+            <button
+              onClick={handleResume}
+              className="w-full py-4 bg-[#F5B819] hover:bg-[#E5A008] text-[#1E3A5F] text-xl rounded-xl font-black shadow-[0_4px_0_#B8860B] active:shadow-[0_2px_0_#B8860B] active:translate-y-[2px] transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+            >
+              <Play size={24} fill="currentColor" />
+              Resume
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* UI Overlays */}
       {(!gameState.isPlaying || gameState.gameOver) && (

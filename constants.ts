@@ -16,7 +16,7 @@ export const GAME_CONSTANTS = {
   // Controls
   LANE_CHANGE_COOLDOWN: 400, // ms
   JUMP_COOLDOWN: 800, // ms
-  
+
   // Pose Detection Thresholds
   LEAN_THRESHOLD_LEFT: 0.60, // Camera right (mirror)
   LEAN_THRESHOLD_RIGHT: 0.40, // Camera left (mirror)
