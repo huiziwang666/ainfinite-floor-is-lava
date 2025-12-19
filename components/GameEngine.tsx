@@ -235,8 +235,41 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
     // Render initial frame
     renderer.render(scene, camera);
 
+    // Start animation loop if game is playing
+    if (gameState.isPlaying && !gameState.gameOver) {
+      isPlayingRef.current = true;
+      lastTimeRef.current = performance.now();
+
+      const animate = (time: number) => {
+        if (!isPlayingRef.current) return;
+
+        // Always request next frame to keep loop alive
+        animationFrameRef.current = requestAnimationFrame(animate);
+
+        // Skip game logic when paused, but still render
+        if (isPausedRef.current) {
+          lastTimeRef.current = time;
+          if (rendererRef.current && sceneRef.current && cameraRef.current) {
+            rendererRef.current.render(sceneRef.current, cameraRef.current);
+          }
+          return;
+        }
+
+        const delta = (time - lastTimeRef.current) / 1000;
+        lastTimeRef.current = time;
+
+        updateGameLogic(delta, time);
+        if (rendererRef.current && sceneRef.current && cameraRef.current) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+
     // Cleanup
     return () => {
+        isPlayingRef.current = false;
         cancelAnimationFrame(animationFrameRef.current);
         if (rendererRef.current && containerRef.current) {
             containerRef.current.removeChild(rendererRef.current.domElement);
@@ -244,44 +277,6 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
         }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState.isPlaying, gameState.gameOver]);
-
-
-  // --- ANIMATION LOOP ---
-  useEffect(() => {
-    if (!gameState.isPlaying || gameState.gameOver) return;
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
-
-    isPlayingRef.current = true;
-    isPausedRef.current = gameState.isPaused;
-    lastTimeRef.current = performance.now();
-
-    const animate = (time: number) => {
-      if (!isPlayingRef.current) return;
-
-      // Always request next frame to keep loop alive
-      animationFrameRef.current = requestAnimationFrame(animate);
-
-      // Skip game logic when paused, but still render
-      if (isPausedRef.current) {
-        lastTimeRef.current = time;
-        renderScene();
-        return;
-      }
-
-      const delta = (time - lastTimeRef.current) / 1000;
-      lastTimeRef.current = time;
-
-      updateGameLogic(delta, time);
-      renderScene();
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      isPlayingRef.current = false;
-      cancelAnimationFrame(animationFrameRef.current);
-    };
   }, [gameState.isPlaying, gameState.gameOver]);
 
   // --- PAUSE STATE SYNC ---
@@ -706,12 +701,6 @@ const GameEngine: React.FC<GameEngineProps> = ({ gameState, setGameState, poseDa
           obstacleMeshesRef.current.delete(id);
       });
       obstaclesRef.current = obstaclesRef.current.filter(o => !obstaclesToRemove.includes(o.id));
-  };
-
-  const renderScene = () => {
-    if (rendererRef.current && sceneRef.current && cameraRef.current) {
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-    }
   };
 
   return (
